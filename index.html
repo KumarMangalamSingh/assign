@@ -9,27 +9,27 @@
 
 <body class="bg-gray-100 p-4">
   <div class="max-w-2xl mx-auto bg-white rounded shadow p-6">
-    <h1 class="text-2xl font-bold mb-4 text-center">My Todo List</h1>
+    <h1 class="text-2xl font-bold mb-4 text-center">Todo List</h1>
 
-    <!-- Add new task -->
+  
     <form id="taskForm" class="flex gap-2 mb-4">
       <input type="text" id="taskInput" class="border flex-1 p-2 rounded" placeholder="Add a task" required />
       <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Add</button>
     </form>
 
-    <!-- Filters -->
+   
     <div class="flex flex-col md:flex-row gap-2 mb-4">
       <input type="text" id="searchBox" placeholder="Search tasks..." class="border p-2 rounded flex-1" />
       <input type="date" id="dateStart" class="border p-2 rounded" />
       <input type="date" id="dateEnd" class="border p-2 rounded" />
     </div>
 
-    <!-- Results & Feedback -->
+   
     <div id="loadingMsg" class="text-center text-gray-500">Loading...</div>
     <ul id="taskList" class="space-y-2 hidden"></ul>
     <div id="errorMsg" class="text-red-500 mt-2 text-sm hidden"></div>
 
-    <!-- Pagination Controls -->
+  
     <div class="flex justify-between mt-4">
       <button id="btnPrev" class="px-4 py-2 bg-gray-300 rounded">Prev</button>
       <button id="btnNext" class="px-4 py-2 bg-gray-300 rounded">Next</button>
@@ -58,7 +58,7 @@
         const response = await fetch(API_ENDPOINT);
         const result = await response.json();
 
-        // Just faking creation dates since the API doesn't include them
+        
         todoItems = result.todos.map(t => ({ ...t, createdAt: getRandomDate() }));
 
         showTasks();
@@ -106,7 +106,7 @@
 
     function getPaginated(data) {
       const start = (pageIndex - 1) * perPage;
-      return data.slice(start, start + perPage);  // just slicing — nothing fancy
+      return data.slice(start, start + perPage); 
     }
 
     document.getElementById('taskForm').addEventListener('submit', async (e) => {
@@ -123,7 +123,7 @@
         });
 
         const added = await res.json();
-        added.createdAt = new Date();  // again, fake timestamp
+        added.createdAt = new Date();  
         todoItems.unshift(added);
 
         input.value = '';
@@ -150,7 +150,7 @@
       }
     });
 
-    // Filter as you type or pick dates
+    
     searchBox.addEventListener('input', () => {
       pageIndex = 1;
       showTasks();
@@ -163,14 +163,13 @@
       });
     });
 
-    // Just a helper to fake dates (January 2024 to today)
+ 
     function getRandomDate() {
       const start = new Date(2024, 0, 1);
       const end = new Date();
       return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
     }
 
-    // Fire on page load
     loadTodos();
   </script>
 </body>
