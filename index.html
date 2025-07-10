@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Todo List App</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-gray-100 p-4">
+  <div class="max-w-2xl mx-auto bg-white rounded shadow p-6">
+    <h1 class="text-2xl font-bold mb-4 text-center">My Todo List</h1>
+
+    <!-- Add new task -->
+    <form id="taskForm" class="flex gap-2 mb-4">
+      <input type="text" id="taskInput" class="border flex-1 p-2 rounded" placeholder="Add a task" required />
+      <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Add</button>
+    </form>
+
+    <!-- Filters -->
+    <div class="flex flex-col md:flex-row gap-2 mb-4">
+      <input type="text" id="searchBox" placeholder="Search tasks..." class="border p-2 rounded flex-1" />
+      <input type="date" id="dateStart" class="border p-2 rounded" />
+      <input type="date" id="dateEnd" class="border p-2 rounded" />
+    </div>
+
+    <!-- Results & Feedback -->
+    <div id="loadingMsg" class="text-center text-gray-500">Loading...</div>
+    <ul id="taskList" class="space-y-2 hidden"></ul>
+    <div id="errorMsg" class="text-red-500 mt-2 text-sm hidden"></div>
+
+    <!-- Pagination Controls -->
+    <div class="flex justify-between mt-4">
+      <button id="btnPrev" class="px-4 py-2 bg-gray-300 rounded">Prev</button>
+      <button id="btnNext" class="px-4 py-2 bg-gray-300 rounded">Next</button>
+    </div>
+  </div>
+
+  <script>
+    const API_ENDPOINT = 'https://dummyjson.com/todos';
+    let todoItems = [];
+    let pageIndex = 1;
+    const perPage = 10;
+
+    const taskList = document.getElementById('taskList');
+    const loadingMsg = document.getElementById('loadingMsg');
+    const errorMsg = document.getElementById('errorMsg');
+
+    const searchBox = document.getElementById('searchBox');
+    const dateStart = document.getElementById('dateStart');
+    const dateEnd = document.getElementById('dateEnd');
+
+    async function loadTodos() {
+      try {
+        loadingMsg.classList.remove('hidden');
+        errorMsg.classList.add('hidden');
+
+        const response = await fetch(API_ENDPOINT);
+        const result = await response.json();
+
+        // Just faking creation dates since the API doesn't include them
+        todoItems = result.todos.map(t => ({ ...t, createdAt: getRandomDate() }));
+
+        showTasks();
+      } catch (err) {
+        errorMsg.textContent = "Oops! Couldn't load the todos.";
+        errorMsg.classList.remove('hidden');
+      } finally {
+        loadingMsg.classList.add('hidden');
+      }
+    }
+
+    function showTasks() {
+      const filtered = applyFilters();
+      const visible = getPaginated(filtered);
+
+      taskList.innerHTML = '';
+
+      if (!visible.length) {
+        taskList.innerHTML = '<li class="text-gray-500 text-center">No matching todos</li>';
+      } else {
+        visible.forEach(item => {
+          const li = document.createElement('li');
+          li.className = 'border p-2 rounded';
+          li.textContent = `${item.todo} (${new Date(item.createdAt).toLocaleDateString()})`;
+          taskList.appendChild(li);
+        });
+      }
+
+      taskList.classList.remove('hidden');
+    }
+
+    function applyFilters() {
+      const searchTerm = searchBox.value.toLowerCase();
+      const from = dateStart.value ? new Date(dateStart.value) : null;
+      const to = dateEnd.value ? new Date(dateEnd.value) : null;
+
+      return todoItems.filter(t => {
+        const created = new Date(t.createdAt);
+        const matchesText = t.todo.toLowerCase().includes(searchTerm);
+        const afterFrom = from ? created >= from : true;
+        const beforeTo = to ? created <= to : true;
+        return matchesText && afterFrom && beforeTo;
+      });
+    }
+
+    function getPaginated(data) {
+      const start = (pageIndex - 1) * perPage;
+      return data.slice(start, start + perPage);  // just slicing — nothing fancy
+    }
+
+    document.getElementById('taskForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const input = document.getElementById('taskInput');
+      const newTask = input.value.trim();
+      if (!newTask) return;
+
+      try {
+        const res = await fetch(`${API_ENDPOINT}/add`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ todo: newTask, completed: false, userId: 1 })
+        });
+
+        const added = await res.json();
+        added.createdAt = new Date();  // again, fake timestamp
+        todoItems.unshift(added);
+
+        input.value = '';
+        pageIndex = 1;
+        showTasks();
+      } catch (err) {
+        errorMsg.textContent = "Couldn't add the new task.";
+        errorMsg.classList.remove('hidden');
+      }
+    });
+
+    document.getElementById('btnNext').addEventListener('click', () => {
+      const maxPages = Math.ceil(applyFilters().length / perPage);
+      if (pageIndex < maxPages) {
+        pageIndex++;
+        showTasks();
+      }
+    });
+
+    document.getElementById('btnPrev').addEventListener('click', () => {
+      if (pageIndex > 1) {
+        pageIndex--;
+        showTasks();
+      }
+    });
+
+    // Filter as you type or pick dates
+    searchBox.addEventListener('input', () => {
+      pageIndex = 1;
+      showTasks();
+    });
+
+    [dateStart, dateEnd].forEach(field => {
+      field.addEventListener('change', () => {
+        pageIndex = 1;
+        showTasks();
+      });
+    });
+
+    // Just a helper to fake dates (January 2024 to today)
+    function getRandomDate() {
+      const start = new Date(2024, 0, 1);
+      const end = new Date();
+      return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+    }
+
+    // Fire on page load
+    loadTodos();
+  </script>
+</body>
+</html>
